@@ -22,15 +22,24 @@ services:
     container_name: archivetune-backend
     ports:
       - "8000:8000"
-    env_file:
-      # Optional — the app runs fine without it (all keys are optional).
-      - path: .env
-        required: false
+    # API keys are optional. Docker Compose automatically reads a .env file in
+    # this directory for ${VAR} substitution if present (and does NOT error if
+    # it's absent). The :- defaults keep every key optional.
     environment:
       - HOST=0.0.0.0
       - PORT=8000
       - DOWNLOAD_DIR=/app/downloads
       - DATABASE_PATH=/app/data/archivetune.db
+      - LASTFM_API_KEY=${LASTFM_API_KEY:-}
+      - LASTFM_API_SECRET=${LASTFM_API_SECRET:-}
+      - LASTFM_USERNAME=${LASTFM_USERNAME:-}
+      - LASTFM_PASSWORD=${LASTFM_PASSWORD:-}
+      - LISTENBRAINZ_TOKEN=${LISTENBRAINZ_TOKEN:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - GCP_TRANSLATION_API_KEY=${GCP_TRANSLATION_API_KEY:-}
     volumes:
       - archivetune-data:/app/downloads
       - archivetune-db:/app/data
