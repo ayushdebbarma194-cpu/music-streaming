@@ -1,0 +1,54 @@
+# ArchiveTune — Docker Compose
+# Runs the backend + frontend together. The frontend connects to the backend
+# via the Docker network.
+#
+# Usage:
+#   cp .env.example .env        # Fill in your API keys
+#   docker compose up --build
+#
+# Then open http://localhost:1420 in your browser.
+#
+# NOTE: Audio playback (mpv) requires access to the host's audio system.
+# On Linux with PulseAudio, uncomment the volume mounts below.
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: archivetune-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - DOWNLOAD_DIR=/app/downloads
+    volumes:
+      - archivetune-data:/app/downloads
+      - archivetune-db:/app/data
+      # Uncomment below for audio playback via PulseAudio on Linux:
+      # - /run/user/1000/pulse:/run/user/1000/pulse
+      # - ~/.config/pulse/cookie:/root/.config/pulse/cookie
+    # Uncomment below for PulseAudio:
+    # environment:
+    #   - PULSE_SERVER=unix:/run/user/1000/pulse/native
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: archivetune-frontend
+    ports:
+      - "1420:1420"
+    environment:
+      - VITE_BACKEND_URL=http://localhost:8000
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  archivetune-data:
+  archivetune-db:

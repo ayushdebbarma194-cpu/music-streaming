@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+
+# Database (will be created fresh in container)
+*.db
+*.db-shm
+*.db-wal
+
+# Downloads (managed by volume)
+downloads/
+
+# Environment (mounted separately)
+.env
+
+# Git
+.git/
+.gitignore
+
+# Frontend (has its own Dockerfile)
+frontend/
+
+# Tests (not needed in production image)
+tests/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
