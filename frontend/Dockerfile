@@ -9,20 +9,26 @@ FROM node:22-slim AS builder
 WORKDIR /app
 
 # Install deps first (separate layer) so source changes don't reinstall.
-# BuildKit cache mount keeps the npm cache warm across builds.
 COPY package.json package-lock.json ./
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --no-audit --no-fund
+RUN npm ci --no-audit --no-fund
 
 COPY . .
 RUN npm run build
 
+# Verify the build produced output
+RUN ls -la /app/dist/index.html
+
 # ── Runtime stage ────────────────────────────────────────────────
-# nginx:alpine is ~15-50MB vs a full node image (~200MB+).
 FROM nginx:1.27-alpine AS runner
 
-COPY --from=builder /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Remove the default nginx site config that listens on port 80
+RUN rm -f /etc/nginx/conf.d/default.conf
+
+# Copy our SPA config
+COPY nginx.conf /etc/nginx/conf.d/archivetune.conf
+
+# Copy built assets and ensure nginx user can read them
+COPY --from=builder --chown=nginx:nginx /app/dist /usr/share/nginx/html
 
 EXPOSE 1420
 
