@@ -62,38 +62,89 @@ The frontend never decodes audio itself — the backend's `mpv` instance is the 
 
 ## Quick Start
 
-### 1. Start the backend
+### Option A: Docker (recommended)
 
 ```bash
-# Install Python dependencies
+git clone https://github.com/ayushdebbarma194-cpu/music-streaming.git
 cd music-streaming
+
+# Configure (all keys are optional — things work without them)
+cp .env.example .env
+
+# Build and run
+docker compose up --build
+```
+
+- **Frontend:** http://localhost:1420
+- **Backend:** http://localhost:8000
+
+> **Audio playback note:** mpv inside Docker needs access to your host audio.
+> On Linux with PulseAudio, uncomment the PulseAudio volume mounts in
+> `docker-compose.yml`. Alternatively, run the backend natively (Option B)
+> for seamless audio.
+
+---
+
+### Option B: Run natively
+
+#### Prerequisites
+
+| Requirement | Install |
+|-------------|---------|
+| Python 3.11+ | Your distro's package manager or [pyenv](https://github.com/pyenv/pyenv) |
+| Node.js 18+ | [nvm](https://github.com/nvm-sh/nvm) or distro package |
+| libmpv | `sudo apt install libmpv2` (Debian/Ubuntu) / `sudo pacman -S mpv` (Arch) / `sudo dnf install mpv-libs` (Fedora) |
+
+#### 1. Backend
+
+```bash
+cd music-streaming
+
+# Create a virtual environment (recommended)
+python -m venv .venv && source .venv/bin/activate
+
+# Install dependencies
 pip install -r requirements.txt
 
-# Configure API keys (all optional — services gracefully no-op if missing)
+# Configure (optional — edit with your own keys if you want scrobbling/AI/etc.)
 cp .env.example .env
-# Edit .env with your Last.fm, ListenBrainz, AI provider keys, etc.
 
-# Requires libmpv for audio playback
-sudo apt install libmpv2   # Ubuntu/Debian
-# sudo pacman -S mpv       # Arch
-# sudo dnf install mpv-libs # Fedora
-
-# Run the backend
+# Start the backend
 uvicorn app.main:app --reload
 ```
 
-The backend will be at `http://127.0.0.1:8000`.
+The backend will be running at `http://127.0.0.1:8000`.
 
-### 2. Start the desktop client
+#### 2. Frontend
+
+Open a second terminal:
 
 ```bash
-cd frontend
+cd music-streaming/frontend
+
+# Install dependencies
 npm install
 
-# Dev server (opens in browser at http://localhost:1420)
+# Start the dev server
 npm run dev
+```
 
-# Or native desktop app (requires Rust + Tauri system deps)
+Open http://localhost:1420 in your browser — it connects to the backend automatically.
+
+#### 3. (Optional) Native desktop app
+
+If you want a native window instead of a browser tab, you need Rust and Tauri's system dependencies:
+
+```bash
+# Install Rust (if not already)
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# Install Tauri system deps (Ubuntu/Debian)
+sudo apt install libwebkit2gtk-4.1-dev build-essential \
+  libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
+
+# Run as a native desktop app
+cd music-streaming/frontend
 npm run tauri dev
 ```
 
