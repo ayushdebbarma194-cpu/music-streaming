@@ -40,6 +40,12 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
       - GCP_TRANSLATION_API_KEY=${GCP_TRANSLATION_API_KEY:-}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
     volumes:
       - archivetune-data:/app/downloads
       - archivetune-db:/app/data
@@ -58,10 +64,9 @@ services:
     container_name: archivetune-frontend
     ports:
       - "1420:1420"
-    environment:
-      - VITE_BACKEND_URL=http://localhost:8000
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:

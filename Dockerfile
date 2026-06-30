@@ -10,10 +10,12 @@ FROM python:3.11-slim
 # Bring in uv — a much faster drop-in replacement for pip.
 COPY --from=ghcr.io/astral-sh/uv:0.5.11 /uv /uvx /bin/
 
-# Install only the runtime system dependency: libmpv for audio playback.
+# Install system dependencies: libmpv for audio playback, curl for healthcheck
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends libmpv2 && \
-    rm -rf /var/lib/apt/lists/*
+    apt-get install -y --no-install-recommends \
+        libmpv2 \
+        curl \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
