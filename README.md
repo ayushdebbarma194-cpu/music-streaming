@@ -82,7 +82,7 @@ sudo apt install libmpv2   # Ubuntu/Debian
 uvicorn app.main:app --reload
 ```
 
-The API will be at `http://127.0.0.1:8000` — interactive docs at `/docs`.
+The backend will be at `http://127.0.0.1:8000`.
 
 ### 2. Start the desktop client
 
@@ -136,38 +136,6 @@ music-streaming/
 
 ---
 
-## Backend API Overview
-
-| Endpoint | Description |
-|----------|-------------|
-| `GET /api/search?q=&type=` | Search catalog |
-| `GET /api/song/{video_id}` | Metadata + resolved stream URL |
-| `GET /api/song/{video_id}/lyrics` | Song lyrics (waterfall) |
-| `GET /api/playlist/{id}` | Playlist details |
-| `GET /api/artist/{id}` | Artist info |
-| `GET /api/album/{id}` | Album details |
-| `POST /api/playback/play` | Start playback |
-| `POST /api/playback/pause` | Pause |
-| `POST /api/playback/resume` | Resume |
-| `POST /api/playback/seek` | Seek |
-| `POST /api/playback/volume` | Set volume |
-| `GET /api/playback/state` | Current state |
-| `WS /ws/playback` | Real-time playback state pushes |
-| `POST /api/queue/add` | Add to queue |
-| `GET /api/queue` | View queue |
-| `POST /api/downloads` | Start download |
-| `GET /api/downloads` | List downloads |
-| `WS /ws/downloads` | Live download progress |
-| `GET /api/lyrics?title=&artist=` | Fetch lyrics |
-| `POST /api/scrobble/nowplaying` | Now playing |
-| `POST /api/scrobble/submit` | Submit scrobble |
-| `POST /api/ai/curate` | AI curation |
-| `POST /api/ai/translate-lyrics` | AI lyrics translation |
-| `GET /api/translate?text=&target=` | Text translation |
-| `WS /ws/together/{room}` | Synchronized playback room |
-
----
-
 ## Desktop Client Design
 
 The frontend faithfully matches the source app's **Material 3 / Material You** design:
@@ -193,17 +161,7 @@ The React frontend code is shell-agnostic — it would port to Electron unchange
 
 ## Configuration
 
-All API keys are optional. The backend no-ops gracefully (returns "not configured" errors) if a key is missing — nothing crashes.
-
-| Key | Service | Where to get it |
-|-----|---------|-----------------|
-| `LASTFM_API_KEY` / `_SECRET` | Last.fm scrobbling | [last.fm/api](https://www.last.fm/api/account/create) |
-| `LISTENBRAINZ_TOKEN` | ListenBrainz | [listenbrainz.org/settings](https://listenbrainz.org/settings/) |
-| `ANTHROPIC_API_KEY` | Claude AI | [console.anthropic.com](https://console.anthropic.com/) |
-| `OPENAI_API_KEY` | OpenAI | [platform.openai.com](https://platform.openai.com/api-keys) |
-| `GEMINI_API_KEY` | Google Gemini | [aistudio.google.com](https://aistudio.google.com/apikey) |
-| `OPENROUTER_API_KEY` | OpenRouter | [openrouter.ai/keys](https://openrouter.ai/keys) |
-| `GCP_TRANSLATION_API_KEY` | Google Translation | GCP console |
+All API keys are optional. The backend no-ops gracefully (returns "not configured" errors) if a key is missing — nothing crashes. See `.env.example` for the full list of configurable tokens.
 
 ---
 
