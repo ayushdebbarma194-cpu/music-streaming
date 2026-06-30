@@ -1,27 +1,29 @@
 # ArchiveTune Frontend — Docker image
-# Builds the React app and serves it with a lightweight static file server.
-# In production you'd use Tauri for a native binary; this is for development
-# or serving the web UI standalone without Tauri.
+# Builds the React app and serves the static output with a tiny nginx runtime.
+# For a native desktop binary, use Tauri (npm run tauri build) instead; this
+# image serves the web UI standalone.
 
+# ── Build stage ──────────────────────────────────────────────────
 FROM node:22-slim AS builder
 
 WORKDIR /app
 
+# Install deps first (separate layer) so source changes don't reinstall.
+# BuildKit cache mount keeps the npm cache warm across builds.
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --no-audit --no-fund
 
 COPY . .
 RUN npm run build
 
-# Serve with a lightweight static server
-FROM node:22-slim AS runner
+# ── Runtime stage ────────────────────────────────────────────────
+# nginx:alpine is ~15-50MB vs a full node image (~200MB+).
+FROM nginx:1.27-alpine AS runner
 
-WORKDIR /app
-
-RUN npm install -g serve
-
-COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 1420
 
-CMD ["serve", "-s", "dist", "-l", "1420"]
+CMD ["nginx", "-g", "daemon off;"]

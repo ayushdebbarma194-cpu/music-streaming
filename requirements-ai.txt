@@ -1,0 +1,10 @@
+# Optional AI provider SDKs.
+# Only needed if you use the AI curation / lyric-translation endpoints.
+# The backend imports these lazily and returns a clear "not installed" error
+# if you call an AI endpoint without them, so the base install stays lean.
+#
+# Install with:  pip install -r requirements-ai.txt
+
+anthropic==0.42.0
+openai==1.58.1
+google-generativeai==0.8.4

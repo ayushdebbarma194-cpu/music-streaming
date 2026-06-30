@@ -78,6 +78,11 @@ docker compose up --build
 - **Frontend:** http://localhost:1420
 - **Backend:** http://localhost:8000
 
+> **Leaner image:** the backend image includes the optional AI SDKs by default.
+> For a smaller, faster build without them, use
+> `docker build --build-arg INCLUDE_AI=false -t archivetune .` (AI endpoints
+> then return a clear "not installed" error until you rebuild with them).
+
 > **Audio playback note:** mpv inside Docker needs access to your host audio.
 > On Linux with PulseAudio, uncomment the PulseAudio volume mounts in
 > `docker-compose.yml`. Alternatively, run the backend natively (Option B)
@@ -108,8 +113,11 @@ cd music-streaming
 # Create a virtual environment (recommended)
 python -m venv .venv && source .venv/bin/activate
 
-# Install dependencies
+# Install core dependencies (fast — AI SDKs are optional, see below)
 pip install -r requirements.txt
+
+# (Optional) AI curation + lyric translation providers
+# pip install -r requirements-ai.txt
 
 # Configure (optional — edit with your own keys if you want scrobbling/AI/etc.)
 cp .env.example .env
@@ -117,6 +125,9 @@ cp .env.example .env
 # Start the backend
 uvicorn app.main:app --reload
 ```
+
+> **Tip:** swap `pip` for [`uv`](https://github.com/astral-sh/uv) for installs
+> that are 10–100× faster: `uv pip install -r requirements.txt`.
 
 The backend will be running at `http://127.0.0.1:8000`.
 
@@ -224,8 +235,11 @@ All API keys are optional. The backend no-ops gracefully (returns "not configure
 ## Testing
 
 ```bash
+# Install dev/test dependencies
+pip install -r requirements-dev.txt
+
 # Backend tests (26 passing — InnerTube + lyrics waterfall)
-pytest -v
+pytest -q
 
 # Frontend typecheck + build
 cd frontend && npm run build
