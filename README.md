@@ -1,161 +1,238 @@
-# ArchiveTune Backend Service
+# ArchiveTune — Linux Music Streaming Platform
 
-A standalone Python FastAPI backend service that replicates the network/playback logic of the [ArchiveTune](https://github.com/koiverse/ArchiveTune) Android music app. Designed to run natively on Linux for personal use, exposing clean REST/WebSocket endpoints consumed by a desktop frontend over localhost.
+A self-hosted music streaming platform for Linux, rebuilt from the [ArchiveTune](https://github.com/koiverse/ArchiveTune) Android app as a standalone backend + desktop client. Personal use, runs entirely on your own machine.
+
+---
+
+## What is this?
+
+The original ArchiveTune is a Kotlin/Jetpack Compose Android app whose backend logic (network calls, API integrations, caching) is tightly coupled to Android Runtime. This project rebuilds it from scratch as:
+
+1. **A Python FastAPI backend** — headless service handling music resolution, playback (via mpv), downloads, lyrics, scrobbling, AI curation, and translation.
+2. **A Tauri desktop client** — native-feeling Linux music player UI (React + TypeScript + Tailwind) that acts as a remote control for the backend.
+
+The frontend never decodes audio itself — the backend's `mpv` instance is the real audio engine. The frontend is a thin, fast UI shell that talks REST/WebSocket.
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Desktop Client (Tauri + React + TS + Tailwind)                 │
+│  Communicates via REST + WebSocket on localhost                  │
+└────────────────────────────┬────────────────────────────────────┘
+                             │ http://localhost:8000
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Backend (Python FastAPI + mpv + SQLite)                         │
+│                                                                 │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
+│  │ InnerTube    │  │ Playback     │  │ Downloads            │  │
+│  │ (ytmusicapi) │  │ (python-mpv) │  │ (httpx streaming)    │  │
+│  └──────────────┘  └──────────────┘  └──────────────────────┘  │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
+│  │ Lyrics       │  │ Scrobbling   │  │ AI Features          │  │
+│  │ (waterfall)  │  │ (Last.fm/LB) │  │ (Claude/OpenAI/etc)  │  │
+│  └──────────────┘  └──────────────┘  └──────────────────────┘  │
+│  ┌──────────────┐  ┌──────────────────────────────────────────┐ │
+│  │ Translation  │  │ Together Mode (WebSocket sync rooms)     │ │
+│  └──────────────┘  └──────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
 
 ## Features
 
-- **Music Source (InnerTube)** — Search YouTube Music catalog, resolve playable stream URLs, browse playlists/artists/albums
-- **Audio Playback** — Full mpv-based audio engine with play/pause/seek/volume/queue via REST + real-time WebSocket state updates
-- **Offline Downloads** — Download tracks for offline playback with progress tracking
-- **Lyrics Waterfall** — Multi-source lyrics fetching (Kugou → SimpMusic → YouTube captions) with SQLite caching
-- **Scrobbling** — Last.fm (Audioscrobbler 2.0) and ListenBrainz integration with automatic scrobble threshold detection
-- **AI Features** — Multi-provider LLM interface (Claude, OpenAI, Gemini, OpenRouter) for music curation and lyrics translation
-- **Translation** — Text translation via Google Translate (official API or googletrans fallback)
-- **Together Mode** — WebSocket rooms for synchronized multi-device playback
+| Feature | Description |
+|---------|-------------|
+| **Music Search & Browse** | Search YouTube Music catalog (songs, albums, artists, playlists) via InnerTube |
+| **Audio Playback** | Full mpv-based engine: play, pause, seek, volume, gapless, queue management |
+| **Offline Downloads** | Download tracks to disk with live progress tracking |
+| **Synced Lyrics** | Multi-source waterfall (Kugou → SimpMusic → YouTube captions), line-by-line sync |
+| **Scrobbling** | Automatic Last.fm + ListenBrainz with threshold detection |
+| **AI Curation** | Multi-provider LLM (Claude, OpenAI, Gemini, OpenRouter) for playlist curation |
+| **AI Lyrics Translation** | Translate lyrics via any configured AI provider |
+| **Text Translation** | Google Translate (deep-translator or GCP API) |
+| **Material You Theming** | Dynamic color scheme generated from a seed color (HCT algorithm) |
+| **Together Mode** | WebSocket rooms for synchronized multi-device playback |
 
-## Prerequisites
+---
 
-### System Dependencies
+## Quick Start
 
-```bash
-# Ubuntu/Debian
-sudo apt install libmpv2
-
-# Arch Linux
-sudo pacman -S mpv
-
-# Fedora
-sudo dnf install mpv-libs
-```
-
-### Python 3.11+
-
-The service requires Python 3.11 or newer.
-
-## Installation
+### 1. Start the backend
 
 ```bash
-# Clone the repo
-git clone <repo-url>
+# Install Python dependencies
 cd music-streaming
-
-# Create virtual environment
-python -m venv .venv
-source .venv/bin/activate
-
-# Install dependencies
 pip install -r requirements.txt
 
-# Copy and configure environment
+# Configure API keys (all optional — services gracefully no-op if missing)
 cp .env.example .env
-# Edit .env with your API keys (all integrations safely no-op if keys are missing)
+# Edit .env with your Last.fm, ListenBrainz, AI provider keys, etc.
+
+# Requires libmpv for audio playback
+sudo apt install libmpv2   # Ubuntu/Debian
+# sudo pacman -S mpv       # Arch
+# sudo dnf install mpv-libs # Fedora
+
+# Run the backend
+uvicorn app.main:app --reload
 ```
 
-## Running
+The API will be at `http://127.0.0.1:8000` — interactive docs at `/docs`.
+
+### 2. Start the desktop client
 
 ```bash
-# Development (with auto-reload)
-uvicorn app.main:app --reload
+cd frontend
+npm install
 
-# Production
-uvicorn app.main:app --host 127.0.0.1 --port 8000
+# Dev server (opens in browser at http://localhost:1420)
+npm run dev
 
-# Or via Python directly
-python -m app.main
+# Or native desktop app (requires Rust + Tauri system deps)
+npm run tauri dev
 ```
 
-The API will be available at `http://127.0.0.1:8000`.
+---
 
-Interactive API docs: `http://127.0.0.1:8000/docs`
+## Project Structure
+
+```
+music-streaming/
+│
+├── app/                          # Python FastAPI backend
+│   ├── main.py                   # App entry, CORS, lifespan
+│   ├── config.py                 # pydantic-settings (all API keys)
+│   ├── database.py               # SQLite via aiosqlite
+│   ├── http_client.py            # Shared httpx.AsyncClient
+│   └── routers/
+│       ├── innertube.py          # Module 1: YouTube Music / InnerTube
+│       ├── playback.py           # Module 2: mpv playback engine + queue + WS
+│       ├── downloads.py          # Module 3: Offline downloads + WS progress
+│       ├── lyrics.py             # Module 4: Multi-source lyrics waterfall
+│       ├── scrobble.py           # Module 5: Last.fm + ListenBrainz
+│       ├── ai.py                 # Module 6: Multi-LLM interface
+│       ├── translate.py          # Module 7: Translation
+│       └── together.py           # Module 8: Sync rooms
+│
+├── frontend/                     # Tauri + React + TypeScript + Tailwind
+│   ├── src/
+│   │   ├── lib/                  # Theme engine, API client, WS hooks, types
+│   │   ├── components/           # Sidebar, MiniPlayer, TrackRow, UI primitives
+│   │   └── pages/                # Home, Search, Library, Downloads, NowPlaying, Settings
+│   ├── src-tauri/                # Rust shell for native Linux binary
+│   └── package.json
+│
+├── tests/                        # Backend integration tests (pytest + respx)
+├── assets/                       # Static assets (language list)
+├── requirements.txt              # Python dependencies
+├── .env.example                  # All configurable API keys/tokens
+└── pytest.ini
+```
+
+---
+
+## Backend API Overview
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/search?q=&type=` | Search catalog |
+| `GET /api/song/{video_id}` | Metadata + resolved stream URL |
+| `GET /api/song/{video_id}/lyrics` | Song lyrics (waterfall) |
+| `GET /api/playlist/{id}` | Playlist details |
+| `GET /api/artist/{id}` | Artist info |
+| `GET /api/album/{id}` | Album details |
+| `POST /api/playback/play` | Start playback |
+| `POST /api/playback/pause` | Pause |
+| `POST /api/playback/resume` | Resume |
+| `POST /api/playback/seek` | Seek |
+| `POST /api/playback/volume` | Set volume |
+| `GET /api/playback/state` | Current state |
+| `WS /ws/playback` | Real-time playback state pushes |
+| `POST /api/queue/add` | Add to queue |
+| `GET /api/queue` | View queue |
+| `POST /api/downloads` | Start download |
+| `GET /api/downloads` | List downloads |
+| `WS /ws/downloads` | Live download progress |
+| `GET /api/lyrics?title=&artist=` | Fetch lyrics |
+| `POST /api/scrobble/nowplaying` | Now playing |
+| `POST /api/scrobble/submit` | Submit scrobble |
+| `POST /api/ai/curate` | AI curation |
+| `POST /api/ai/translate-lyrics` | AI lyrics translation |
+| `GET /api/translate?text=&target=` | Text translation |
+| `WS /ws/together/{room}` | Synchronized playback room |
+
+---
+
+## Desktop Client Design
+
+The frontend faithfully matches the source app's **Material 3 / Material You** design:
+
+- **Dynamic color** — entire scheme generated from a single seed color at runtime (HCT algorithm via `@material/material-color-utilities`)
+- **Three theme modes** — Light / Dark / AMOLED Pure Black, following system preference
+- **Fixed accent palette** — 25 vibrant colors for playlist/avatar fallbacks, assigned deterministically
+- **Desktop layout** — left sidebar nav, persistent bottom mini-player, full Now Playing overlay with synced lyrics
+- **Material Symbols** (rounded) iconography
+
+### Why Tauri over Electron
+
+| | Tauri | Electron |
+|--|-------|----------|
+| Binary size | ~5–10 MB | ~100+ MB |
+| Idle RAM | ~30–60 MB | ~100–200 MB |
+| Runtime | System WebKitGTK | Bundled Chromium |
+| Node APIs needed? | No (all logic in Python backend) | No |
+
+The React frontend code is shell-agnostic — it would port to Electron unchanged if you prefer faster iteration at the cost of a larger binary.
+
+---
 
 ## Configuration
 
-All configuration is done via environment variables (`.env` file). See `.env.example` for the full list.
+All API keys are optional. The backend no-ops gracefully (returns "not configured" errors) if a key is missing — nothing crashes.
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `LASTFM_API_KEY` | No | Last.fm API key for scrobbling |
-| `LASTFM_API_SECRET` | No | Last.fm API secret |
-| `LASTFM_USERNAME` | No | Last.fm username |
-| `LASTFM_PASSWORD` | No | Last.fm password |
-| `LISTENBRAINZ_TOKEN` | No | ListenBrainz user token |
-| `ANTHROPIC_API_KEY` | No | Anthropic Claude API key |
-| `OPENAI_API_KEY` | No | OpenAI API key |
-| `GEMINI_API_KEY` | No | Google Gemini API key |
-| `OPENROUTER_API_KEY` | No | OpenRouter API key |
-| `GCP_TRANSLATION_API_KEY` | No | Google Cloud Translation key |
-| `DOWNLOAD_DIR` | No | Download directory (default: `./downloads`) |
+| Key | Service | Where to get it |
+|-----|---------|-----------------|
+| `LASTFM_API_KEY` / `_SECRET` | Last.fm scrobbling | [last.fm/api](https://www.last.fm/api/account/create) |
+| `LISTENBRAINZ_TOKEN` | ListenBrainz | [listenbrainz.org/settings](https://listenbrainz.org/settings/) |
+| `ANTHROPIC_API_KEY` | Claude AI | [console.anthropic.com](https://console.anthropic.com/) |
+| `OPENAI_API_KEY` | OpenAI | [platform.openai.com](https://platform.openai.com/api-keys) |
+| `GEMINI_API_KEY` | Google Gemini | [aistudio.google.com](https://aistudio.google.com/apikey) |
+| `OPENROUTER_API_KEY` | OpenRouter | [openrouter.ai/keys](https://openrouter.ai/keys) |
+| `GCP_TRANSLATION_API_KEY` | Google Translation | GCP console |
 
-**Note:** All integrations safely return "not configured" errors if their keys are missing — nothing crashes.
-
-## API Overview
-
-### Music Source
-- `GET /api/search?q=&type=songs|albums|artists|playlists` — Search catalog
-- `GET /api/song/{video_id}` — Metadata + resolved stream URL
-- `GET /api/song/{video_id}/lyrics` — Song lyrics
-- `GET /api/playlist/{playlist_id}` — Playlist details
-- `GET /api/artist/{artist_id}` — Artist info
-- `GET /api/album/{album_id}` — Album details
-
-### Playback
-- `POST /api/playback/play` — Start playback (`{video_id}` or `{stream_url}`)
-- `POST /api/playback/pause` — Pause
-- `POST /api/playback/resume` — Resume
-- `POST /api/playback/seek` — Seek (`{position_seconds}`)
-- `POST /api/playback/volume` — Set volume (`{level: 0-100}`)
-- `GET /api/playback/state` — Current state
-- `WS /ws/playback` — Real-time playback state updates
-
-### Queue
-- `POST /api/queue/add` — Add to queue
-- `DELETE /api/queue/{index}` — Remove from queue
-- `GET /api/queue` — Get queue
-- `POST /api/queue/reorder` — Reorder queue
-
-### Downloads
-- `POST /api/downloads` — Start download (`{video_id}`)
-- `GET /api/downloads` — List all downloads
-- `DELETE /api/downloads/{id}` — Remove download
-- `GET /api/downloads/{id}/file` — Serve cached file
-- `WS /ws/downloads` — Real-time progress
-
-### Lyrics
-- `GET /api/lyrics?title=&artist=&video_id=` — Fetch lyrics (waterfall)
-
-### Scrobbling
-- `POST /api/scrobble/nowplaying` — Now playing
-- `POST /api/scrobble/submit` — Submit scrobble
-
-### AI Features
-- `POST /api/ai/curate` — AI music curation
-- `POST /api/ai/translate-lyrics` — AI lyrics translation
-- `GET /api/ai/providers` — List configured providers
-
-### Translation
-- `GET /api/translate?text=&target=` — Translate text
-- `GET /api/translate/languages` — Language list
-
-### Together Mode
-- `WS /ws/together/{room_code}` — Synchronized playback room
+---
 
 ## Testing
 
 ```bash
-# Run all tests
-pytest
-
-# Run with verbose output
+# Backend tests (26 passing — InnerTube + lyrics waterfall)
 pytest -v
 
-# Run specific test module
-pytest tests/test_innertube.py
-pytest tests/test_lyrics.py
+# Frontend typecheck + build
+cd frontend && npm run build
+
+# Frontend lint
+cd frontend && npm run lint
 ```
 
-## Optional: Reverse Proxy with Caddy
+---
 
-If you want to access this from another device on your LAN with TLS:
+## Security
+
+- Backend is **localhost-only** by default — never bound to `0.0.0.0`
+- CORS allows only `http://localhost:*` and `tauri://localhost`
+- No DRM circumvention — errors are surfaced if DRM content is encountered
+- All API keys stay in your `.env` and are never logged or exposed
+- The frontend stores only UI preferences (theme, sidebar width) in localStorage — nothing sensitive
+
+---
+
+## Optional: LAN Access with Caddy
 
 ```
 # Caddyfile
@@ -169,38 +246,7 @@ archivetune.local {
 sudo caddy run --config Caddyfile
 ```
 
-## Architecture
-
-```
-app/
-├── __init__.py
-├── main.py              # FastAPI app, CORS, lifespan
-├── config.py            # pydantic-settings configuration
-├── database.py          # SQLite (aiosqlite) setup
-├── http_client.py       # Shared httpx.AsyncClient
-└── routers/
-    ├── innertube.py     # Module 1: YouTube Music/InnerTube
-    ├── playback.py      # Module 2: mpv playback engine
-    ├── downloads.py     # Module 3: Offline downloads
-    ├── lyrics.py        # Module 4: Lyrics waterfall
-    ├── scrobble.py      # Module 5: Last.fm + ListenBrainz
-    ├── ai.py            # Module 6: Multi-LLM interface
-    ├── translate.py     # Module 7: Translation
-    └── together.py      # Module 8: Sync rooms
-assets/
-    └── translator_languages.json  # 133 languages for picker
-tests/
-    ├── conftest.py
-    ├── test_innertube.py
-    └── test_lyrics.py
-```
-
-## Security Notes
-
-- This backend is **localhost-only** by default — never bind to `0.0.0.0` unless you understand the implications
-- CORS only allows `http://localhost:*` and `tauri://localhost`
-- No DRM circumvention — if a DRM-protected response is encountered, an error is surfaced
-- All API keys stay in your `.env` file and are never logged or exposed
+---
 
 ## License
 
