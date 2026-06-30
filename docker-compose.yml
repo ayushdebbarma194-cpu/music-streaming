@@ -3,10 +3,13 @@
 # via the Docker network.
 #
 # Usage:
-#   cp .env.example .env        # Fill in your API keys
 #   docker compose up --build
 #
 # Then open http://localhost:1420 in your browser.
+#
+# API keys are OPTIONAL. To add them, copy .env.example to .env first:
+#   cp .env.example .env
+# (the .env file is picked up automatically if present).
 #
 # NOTE: Audio playback (mpv) requires access to the host's audio system.
 # On Linux with PulseAudio, uncomment the volume mounts below.
@@ -20,11 +23,14 @@ services:
     ports:
       - "8000:8000"
     env_file:
-      - .env
+      # Optional — the app runs fine without it (all keys are optional).
+      - path: .env
+        required: false
     environment:
       - HOST=0.0.0.0
       - PORT=8000
       - DOWNLOAD_DIR=/app/downloads
+      - DATABASE_PATH=/app/data/archivetune.db
     volumes:
       - archivetune-data:/app/downloads
       - archivetune-db:/app/data

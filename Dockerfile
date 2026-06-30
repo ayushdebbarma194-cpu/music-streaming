@@ -40,7 +40,6 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Copy application code (changes here reuse the dependency layer above).
 COPY app/ ./app/
 COPY assets/ ./assets/
-COPY .env.example ./.env.example
 
 RUN mkdir -p /app/downloads
 

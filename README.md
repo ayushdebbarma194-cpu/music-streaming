@@ -68,11 +68,11 @@ The frontend never decodes audio itself — the backend's `mpv` instance is the 
 git clone https://github.com/ayushdebbarma194-cpu/music-streaming.git
 cd music-streaming
 
-# Configure (all keys are optional — things work without them)
-cp .env.example .env
-
-# Build and run
+# Build and run (API keys are optional — it works without them)
 docker compose up --build
+
+# (Optional) to add API keys for scrobbling/AI/etc., create .env first:
+#   cp .env.example .env   &&   docker compose up --build
 ```
 
 - **Frontend:** http://localhost:1420

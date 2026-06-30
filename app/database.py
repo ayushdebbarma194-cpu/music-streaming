@@ -3,12 +3,15 @@ ArchiveTune Backend — Database setup (SQLite via aiosqlite)
 Manages the SQLite database for caching stream URLs, downloads metadata, and lyrics.
 """
 
+import os
 from typing import Optional
 
 import aiosqlite
 from pathlib import Path
 
-DB_PATH = Path("archivetune.db")
+# DB location is configurable (e.g. point it at a mounted volume in Docker).
+# Defaults to a file in the working directory for local runs.
+DB_PATH = Path(os.environ.get("DATABASE_PATH", "archivetune.db"))
 
 _db: Optional[aiosqlite.Connection] = None
 
@@ -17,6 +20,8 @@ async def get_db() -> aiosqlite.Connection:
     """Get or create the database connection."""
     global _db
     if _db is None:
+        # Ensure the parent directory exists (e.g. a mounted /app/data volume).
+        DB_PATH.parent.mkdir(parents=True, exist_ok=True)
         _db = await aiosqlite.connect(str(DB_PATH))
         _db.row_factory = aiosqlite.Row
         await _db.execute("PRAGMA journal_mode=WAL")
