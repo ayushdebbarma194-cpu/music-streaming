@@ -19,7 +19,9 @@ dist/
 *.db
 
 # Downloads
-downloads/
+# Downloads (backend offline cache only — anchored to repo root so it doesn't
+# match frontend source dirs like frontend/src/pages/downloads/)
+/downloads/
 
 # IDE
 .vscode/
