@@ -95,11 +95,16 @@ docker compose up --build
 | Node.js 18+ | [nvm](https://github.com/nvm-sh/nvm) or distro package |
 | libmpv | `sudo apt install libmpv2` (Debian/Ubuntu) / `sudo pacman -S mpv` (Arch) / `sudo dnf install mpv-libs` (Fedora) |
 
-#### 1. Backend
+#### 1. Clone the repo
 
 ```bash
+git clone https://github.com/ayushdebbarma194-cpu/music-streaming.git
 cd music-streaming
+```
 
+#### 2. Backend
+
+```bash
 # Create a virtual environment (recommended)
 python -m venv .venv && source .venv/bin/activate
 
@@ -115,7 +120,7 @@ uvicorn app.main:app --reload
 
 The backend will be running at `http://127.0.0.1:8000`.
 
-#### 2. Frontend
+#### 3. Frontend
 
 Open a second terminal:
 
@@ -131,7 +136,7 @@ npm run dev
 
 Open http://localhost:1420 in your browser — it connects to the backend automatically.
 
-#### 3. (Optional) Native desktop app
+#### 4. (Optional) Native desktop app
 
 If you want a native window instead of a browser tab, you need Rust and Tauri's system dependencies:
 
